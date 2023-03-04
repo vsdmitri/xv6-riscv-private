@@ -5,6 +5,8 @@ _*
 *.asm
 *.sym
 *.img
+*DS_Store
+.idea
 vectors.S
 bootblock
 entryother
