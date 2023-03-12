@@ -29,6 +29,7 @@ main()
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk
     userinit();      // first user process
+    sleeplock_handler_init(); // sleeplock_handler
     __sync_synchronize();
     started = 1;
   } else {
