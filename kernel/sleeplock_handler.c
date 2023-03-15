@@ -13,7 +13,7 @@
 struct {
     struct spinlock lock;
     struct sleeplock sleeplocks[NSLEEPLOCK];
-    char sleeplock_used[NSLEEPLOCK];
+    int sleeplock_used[NSLEEPLOCK];
 } sleeplock_handler;
 
 void sleeplock_handler_init() {
