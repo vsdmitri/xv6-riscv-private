@@ -13,7 +13,7 @@ void handle_sleeplock_handler_error(int error_code) {
     if (error_code >= 0) return;
 
     if (error_code == -1) {
-        fprintf(STDERR, "invalid lock_id\n");
+        fprintf(STDERR, "invalid lock id\n");
         exit(1);
     }
 
@@ -32,7 +32,7 @@ void handle_sleeplock_handler_error(int error_code) {
         exit(1);
     }
 
-    fprintf(STDERR, "unexpected error in sleeplock_handler\n");
+    fprintf(STDERR, "unexpected error in sleeplock handler\n");
     exit(1);
 }
 
