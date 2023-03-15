@@ -25,15 +25,11 @@ void sleeplock_handler_init() {
 }
 
 int check_lock_id(int lock_id) {
-    if (lock_id < 0 || lock_id >= NSLEEPLOCK) {
-        // invalid lock_id
-        return -1;
-    }
+    if (lock_id < 0 || lock_id >= NSLEEPLOCK)
+        return -1; // invalid lock_id
 
-    if (!sleeplock_handler.sleeplock_used[lock_id]) {
-        // not busy
-        return -2;
-    }
+    if (!sleeplock_handler.sleeplock_used[lock_id])
+        return -2; // not busy
 
     return 0;
 }
@@ -67,8 +63,7 @@ uint64 handle_sleeplock(int request_type, int lock_id) {
         }
         release(&sleeplock_handler.lock);
 
-        // to many locks
-        return -3;
+        return -3; // to many locks
     }
 
     if (request_type == REMOVE) {
@@ -83,6 +78,5 @@ uint64 handle_sleeplock(int request_type, int lock_id) {
         return 0;
     }
 
-    // wrong request type
-    return -4;
+    return -4; // wrong request type
 }
