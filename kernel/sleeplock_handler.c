@@ -39,32 +39,24 @@ int check_lock_id(int lock_id) {
 }
 
 uint64 handle_sleeplock(int request_type, int lock_id) {
-    acquire(&sleeplock_handler.lock);
     int error = 0;
 
     if (request_type == ACQUIRE) {
         error = check_lock_id(lock_id);
-        if(error < 0) {
-            release(&sleeplock_handler.lock);
-            return error;
-        }
-        release(&sleeplock_handler.lock);
+        if (error < 0) return error;
         acquiresleep(&sleeplock_handler.sleeplocks[lock_id]);
         return 0;
     }
 
     if (request_type == RELEASE) {
         error = check_lock_id(lock_id);
-        if(error < 0) {
-            release(&sleeplock_handler.lock);
-            return error;
-        }
-        release(&sleeplock_handler.lock);
+        if (error < 0) return error;
         releasesleep(&sleeplock_handler.sleeplocks[lock_id]);
         return 0;
     }
 
     if (request_type == GET) {
+        acquire(&sleeplock_handler.lock);
         int free = 0;
         for (; free < NSLEEPLOCK; free++) {
             if (!sleeplock_handler.sleeplock_used[free]) {
@@ -74,13 +66,15 @@ uint64 handle_sleeplock(int request_type, int lock_id) {
             }
         }
         release(&sleeplock_handler.lock);
+
         // to many locks
         return -3;
     }
 
     if (request_type == REMOVE) {
+        acquire(&sleeplock_handler.lock);
         error = check_lock_id(lock_id);
-        if(error < 0) {
+        if (error < 0) {
             release(&sleeplock_handler.lock);
             return error;
         }
@@ -89,7 +83,6 @@ uint64 handle_sleeplock(int request_type, int lock_id) {
         return 0;
     }
 
-    release(&sleeplock_handler.lock);
     // wrong request type
     return -4;
 }
