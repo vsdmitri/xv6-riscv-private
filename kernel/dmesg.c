@@ -66,7 +66,5 @@ void pr_msg(const char *str) {
 }
 
 void dmesg() {
-    acquire(&lock);
     consolewrite(0, (uint64)buffer, current_buffer_size);
-    release(&lock);
 }
