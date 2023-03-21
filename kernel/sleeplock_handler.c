@@ -4,11 +4,7 @@
 #include "spinlock.h"
 #include "sleeplock.h"
 #include "defs.h"
-
-#define ACQUIRE 0
-#define RELEASE 1
-#define GET     2
-#define REMOVE  3
+#include "sleeplock_nandler.h"
 
 struct {
     struct spinlock lock;
@@ -26,10 +22,10 @@ void sleeplock_handler_init() {
 
 int check_lock_id(int lock_id) {
     if (lock_id < 0 || lock_id >= NSLEEPLOCK)
-        return -1; // invalid lock_id
+        return ILIE;
 
     if (!sleeplock_handler.sleeplock_used[lock_id])
-        return -2; // not busy
+        return ILSE;
 
     return 0;
 }
@@ -37,21 +33,18 @@ int check_lock_id(int lock_id) {
 uint64 handle_sleeplock(int request_type, int lock_id) {
     int error = 0;
 
-    if (request_type == ACQUIRE) {
+    switch (request_type) {
+    case ACQUIRE_SLEEPLOCK:
         error = check_lock_id(lock_id);
         if (error < 0) return error;
         acquiresleep(&sleeplock_handler.sleeplocks[lock_id]);
-        return 0;
-    }
-
-    if (request_type == RELEASE) {
+        break;
+    case RELEASE_SLEEPLOCK:
         error = check_lock_id(lock_id);
         if (error < 0) return error;
         releasesleep(&sleeplock_handler.sleeplocks[lock_id]);
-        return 0;
-    }
-
-    if (request_type == GET) {
+        break;
+    case GET_SLEEPLOCK:
         acquire(&sleeplock_handler.lock);
         int free = 0;
         for (; free < NSLEEPLOCK; free++) {
@@ -63,10 +56,8 @@ uint64 handle_sleeplock(int request_type, int lock_id) {
         }
         release(&sleeplock_handler.lock);
 
-        return -3; // to many locks
-    }
-
-    if (request_type == REMOVE) {
+        return NELE;
+    case REMOVE_SLEEPLOCK:
         acquire(&sleeplock_handler.lock);
         error = check_lock_id(lock_id);
         if (error < 0) {
@@ -75,8 +66,10 @@ uint64 handle_sleeplock(int request_type, int lock_id) {
         }
         sleeplock_handler.sleeplock_used[lock_id] = 0;
         release(&sleeplock_handler.lock);
-        return 0;
+        break;
+    default:
+        return WRTE;
     }
 
-    return -4; // wrong request type
+    return 0;
 }

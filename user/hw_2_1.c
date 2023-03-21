@@ -1,47 +1,35 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
+#include "kernel/sleeplock_nandler.h"
 #include "user/user.h"
 
 #define STDERR 2
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
-#define ACQUIRE 0
-#define RELEASE 1
-#define GET     2
-#define REMOVE  3
+int pid;
 
-void handle_sleeplock_handler_error(int error_code) {
-    if (error_code >= 0) return;
+int safe_handle_sleeplock(int operation, int lock_id) {
+    static char *err2msg[ERR_COUNT + 2] = {"", "invalid lock id\n", "invalid sleeplock state\n",
+                                           "not enough sleeplocks\n", "wrong request type\n", "unexpected error\n"};
 
-    if (error_code == -1) {
-        fprintf(STDERR, "invalid lock id\n");
-        exit(1);
+    int error_code = handle_sleeplock(operation, lock_id);
+    if (error_code >= 0) return error_code;
+
+    error_code = min(-error_code, ERR_COUNT + 1);
+
+    fprintf(STDERR, err2msg[error_code]);
+    if (pid && (operation == ACQUIRE_SLEEPLOCK || operation == RELEASE_SLEEPLOCK)) {
+        handle_sleeplock(REMOVE_SLEEPLOCK, lock_id);
     }
-
-    if (error_code == -2) {
-        fprintf(STDERR, "invalid sleeplock state\n");
-        exit(1);
-    }
-
-    if (error_code == -3) {
-        fprintf(STDERR, "not enough sleeplocks\n");
-        exit(1);
-    }
-
-    if (error_code == -4) {
-        fprintf(STDERR, "wrong request type\n");
-        exit(1);
-    }
-
-    fprintf(STDERR, "unexpected error in sleeplock handler\n");
     exit(1);
 }
 
 // Maybe it's better to use multiple "write()" and check the return value.
 // But in this task it looks like overkill.
 void tell_pids_char(char *c, int lock_id) {
-    handle_sleeplock_handler_error(handle_sleeplock(ACQUIRE, lock_id));
+    safe_handle_sleeplock(ACQUIRE_SLEEPLOCK, lock_id);
     printf("%d: received %c\n", getpid(), *c);
-    handle_sleeplock_handler_error(handle_sleeplock(RELEASE, lock_id));
+    safe_handle_sleeplock(RELEASE_SLEEPLOCK, lock_id);
 }
 
 void safe_write_char(int bf, char *buffer) {
@@ -70,12 +58,12 @@ int main(int argc, char **argv) {
     safe_pipe_creation(parent_2_child_pipe);
     safe_pipe_creation(child_2_parent_pipe);
 
-    int lock_id = handle_sleeplock(GET, 0);
-    handle_sleeplock_handler_error(lock_id);
+    int lock_id = safe_handle_sleeplock(GET_SLEEPLOCK, 0);
 
-    int pid = fork();
+    pid = fork();
     if (pid == -1) {
         fprintf(STDERR, "fork error\n");
+        handle_sleeplock(REMOVE_SLEEPLOCK, lock_id);
         exit(1);
     }
 
@@ -112,7 +100,7 @@ int main(int argc, char **argv) {
 
         close(child_2_parent_pipe[0]);
         wait(0);
-        handle_sleeplock(REMOVE, lock_id);
+        safe_handle_sleeplock(REMOVE_SLEEPLOCK, lock_id);
     }
     exit(0);
 }
