@@ -89,3 +89,14 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_handle_sleeplock(void)
+{
+  int request_type;
+  int lock_id;
+
+  argint(0, &request_type);
+  argint(1, &lock_id);
+  return handle_sleeplock(request_type, lock_id);
+}
