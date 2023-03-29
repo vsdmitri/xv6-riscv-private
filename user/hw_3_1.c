@@ -3,6 +3,9 @@
 #include "user/user.h"
 
 int main() {
-    vmprint();
+    if (vmprint() != 0) {
+        printf("No proc in pgaccess.\n");
+        exit(1);
+    }
     exit(0);
 }

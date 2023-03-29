@@ -104,10 +104,8 @@ sys_handle_sleeplock(void)
 uint64
 sys_vmprint(void) {
   struct proc* proc = myproc();
-//  if (proc == 0) {
-//    printf("No proc in vmprint.\n"); // TODO
-//    return;
-//  }
+  if (proc == 0)
+    return 1;
 
   pagetable_t pagetable = proc->pagetable;
   vmprint(pagetable);
@@ -117,10 +115,8 @@ sys_vmprint(void) {
 uint64
 sys_pgaccess(void) {
   struct proc* proc = myproc();
-//  if (proc == 0) {
-//    printf("No proc in vmprint.\n"); // TODO
-//    return;
-//  }
+  if (proc == 0)
+    return 1;
 
   pagetable_t pagetable = proc->pagetable;
   pgaccess(pagetable);

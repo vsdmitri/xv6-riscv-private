@@ -3,7 +3,13 @@
 #include "user/user.h"
 
 int main() {
-    pgaccess();
-    pgaccess();
+    if (pgaccess() != 0) {
+        printf("No proc in pgaccess.\n");
+        exit(1);
+    }
+    if (pgaccess() != 0) {
+        printf("No proc in pgaccess.\n");
+        exit(1);
+    }
     exit(0);
 }
