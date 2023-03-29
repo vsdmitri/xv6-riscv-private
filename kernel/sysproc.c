@@ -100,3 +100,29 @@ sys_handle_sleeplock(void)
   argint(1, &lock_id);
   return handle_sleeplock(request_type, lock_id);
 }
+
+uint64
+sys_vmprint(void) {
+  struct proc* proc = myproc();
+//  if (proc == 0) {
+//    printf("No proc in vmprint.\n"); // TODO
+//    return;
+//  }
+
+  pagetable_t pagetable = proc->pagetable;
+  vmprint(pagetable);
+  return 0;
+}
+
+uint64
+sys_pgaccess(void) {
+  struct proc* proc = myproc();
+//  if (proc == 0) {
+//    printf("No proc in vmprint.\n"); // TODO
+//    return;
+//  }
+
+  pagetable_t pagetable = proc->pagetable;
+  pgaccess(pagetable);
+  return 0;
+}

@@ -12,3 +12,4 @@
 #define FSSIZE       2000  // size of file system in blocks
 #define MAXPATH      128   // maximum file path name
 #define NSLEEPLOCK   16    // maximum number of sleeplocks
+#define PG_DEPTH     3     // page tables levels

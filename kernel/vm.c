@@ -6,12 +6,16 @@
 #include "defs.h"
 #include "fs.h"
 
+#define bool(b)  b ? 1 : 0
+#define bits8(n) bool(n & 1), bool(n & 2), bool(n & 4), bool(n & 8), bool(n & 16), bool(n & 32), bool(n & 64), bool(n & 128)
+
 /*
  * the kernel's page table.
  */
 pagetable_t kernel_pagetable;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
+
 
 extern char trampoline[]; // trampoline.S
 
@@ -45,7 +49,7 @@ kvmmake(void)
 
   // allocate and map a kernel stack for each process.
   proc_mapstacks(kpgtbl);
-  
+
   return kpgtbl;
 }
 
@@ -88,7 +92,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   if(va >= MAXVA)
     panic("walk");
 
-  for(int level = 2; level > 0; level--) {
+  for(int level = PG_DEPTH - 1; level > 0; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
     if(*pte & PTE_V) {
       pagetable = (pagetable_t)PTE2PA(*pte);
@@ -147,7 +151,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 
   if(size == 0)
     panic("mappages: size");
-  
+
   a = PGROUNDDOWN(va);
   last = PGROUNDDOWN(va + size - 1);
   for(;;){
@@ -338,7 +342,7 @@ void
 uvmclear(pagetable_t pagetable, uint64 va)
 {
   pte_t *pte;
-  
+
   pte = walk(pagetable, va, 0);
   if(pte == 0)
     panic("uvmclear");
@@ -436,4 +440,59 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void
+recursive_vmprinter(pagetable_t pagetable, int level) {
+  static char *level2buf[PG_DEPTH] = {" .. .. ..", " .. ..",  " .."};
+
+  if (level < 0 || level >= PG_DEPTH)
+    panic("Unexpected depth of page tables!");
+
+  // there are 2^9 = 512 PTEs in a page table.
+  for (int i = 0; i < 512; i++) {
+    uint64 pte = pagetable[i];
+
+    if (pte & PTE_V) {
+      uint64 child = PTE2PA(pte);
+      printf("%s%d: pte %p pa %p [valid: %d, read: %d, write: %d, execute: %d user: %d global: %d access: %d dirty: %d]\n", level2buf[level], i, pte, child, bits8(pte));
+      if (level)
+        recursive_vmprinter((pagetable_t) child, level - 1);
+    }
+  }
+}
+
+void
+vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  recursive_vmprinter(pagetable, PG_DEPTH - 1);
+}
+
+void
+recursive_pgaccesser(pagetable_t pagetable, int level) {
+  if (level < 0 || level >= PG_DEPTH)
+    panic("Unexpected depth of page tables!");
+
+  // there are 2^9 = 512 PTEs in a page table.
+  for (int i = 0; i < 512; i++) {
+    uint64 pte = pagetable[i];
+
+    if (pte & PTE_V) {
+      uint64 child = PTE2PA(pte);
+
+      if (pte & PTE_A) {
+        printf("%p\n", pte);
+        pagetable[i] &= ~PTE_A;
+      }
+
+      if (level)
+        recursive_pgaccesser((pagetable_t) child, level - 1);
+    }
+  }
+}
+
+void
+pgaccess(pagetable_t pagetable) {
+  printf("page accesses:\n");
+  recursive_pgaccesser(pagetable, PG_DEPTH - 1);
 }
