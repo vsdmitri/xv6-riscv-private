@@ -6,14 +6,17 @@
 #include "proc.h"
 #include "defs.h"
 
+#include <stdarg.h>
+
 #define BUFF_SIZE_IN_PAGES 1
 #define BUFF_SIZE (BUFF_SIZE_IN_PAGES * PGSIZE)
 
 // Amount of characters counting spaces that record the number of ticks
-#define TICKS_RECORD_LENGTH 11
+#define TICKS_RECORD_LENGTH 7
 
 static char buffer[BUFF_SIZE];
-static int current_buffer_size = 0;
+static int current_buffer_position = 0;
+int buffer_overlaps = 0;
 
 static struct spinlock lock;
 
@@ -23,14 +26,30 @@ void dmesginit() {
     initlock(&lock, "dmesg lock");
 }
 
+void increase_buffer_pos() {
+    current_buffer_position++;
+    if (current_buffer_position == BUFF_SIZE) {
+        buffer_overlaps = 1;
+        current_buffer_position = 0;
+    }
+}
+
+static void append_char(char c) {
+    buffer[current_buffer_position] = c;
+    increase_buffer_pos();
+}
+
 static void append_str(const char *str) {
-    while (current_buffer_size < BUFF_SIZE && *str != 0) {
-        buffer[current_buffer_size++] = *str;
+    while (*str != 0) {
+        buffer[current_buffer_position] = *str;
+        increase_buffer_pos();
         str++;
     }
 }
 
-static void append_int(int n) {
+static char *digit_symbols = "0123456789abcdef";
+
+static void append_int_with_alignment(int n) {
     char digits[TICKS_RECORD_LENGTH + 1];
     digits[TICKS_RECORD_LENGTH] = 0;
 
@@ -48,23 +67,118 @@ static void append_int(int n) {
     append_str(digits);
 }
 
+#define MAX_BUFFER_SIZE 17
+
+static void append_int(int n, int base) {
+    char buffer[MAX_BUFFER_SIZE];
+    char *bufer_head = buffer + MAX_BUFFER_SIZE - 1;
+
+    if (n == 0) {
+        append_char('0');
+        return;
+    }
+
+    if (n < 0) {
+        append_char('-');
+        n = -(unsigned int) n;
+    }
+
+    while (n > 0) {
+        *(--bufer_head) = digit_symbols[n % base];
+        n /= base;
+    }
+
+    append_str(bufer_head);
+}
+
+static void append_ptr(uint64 x) {
+    append_str("0x");
+    for (int i = 0; i < (sizeof(uint64) * 2); i++, x <<= 4)
+        append_char(digit_symbols[x >> (sizeof(uint64) * 8 - 4)]);
+}
+
 static void append_ticks_info() {
-    append_str("Ticks =");
     acquire(&tickslock);
     int ticks_ = ticks;
     release(&tickslock);
-    append_int(ticks_);
+    append_int_with_alignment(ticks_);
     append_str(" :: ");
 }
 
-void pr_msg(const char *str) {
+void pr_msg(const char *fmt, ...) {
     acquire(&lock);
     append_ticks_info();
-    append_str(str);
-    append_str("\n");
+
+    int i, c;
+    char *s;
+
+    if (fmt == 0)
+        panic("null fmt");
+
+    va_list ap;
+    va_start(ap, fmt);
+    for (i = 0; (c = fmt[i] & 0xff) != 0; i++) {
+        if (c != '%') {
+            append_char(c);
+            continue;
+        }
+        c = fmt[++i] & 0xff;
+        if (c == 0)
+            break;
+        switch (c) {
+            case 'd':
+                append_int(va_arg(ap,
+                int), 10);
+                break;
+            case 'x':
+                append_int(va_arg(ap,
+                int), 16);
+                break;
+            case 'p':
+                append_ptr(va_arg(ap, uint64));
+                break;
+            case 's':
+                if ((s = va_arg(ap, char*)) == 0)
+                s = "(null)";
+                append_str(s);
+                break;
+            case '%':
+                append_char('%');
+                break;
+            default:
+                // Append unknown % sequence to draw attention.
+                append_char('%');
+                append_char(c);
+                break;
+        }
+    }
+    va_end(ap);
+
+    append_char('\n');
     release(&lock);
 }
 
-void dmesg() {
-    consolewrite(0, (uint64)buffer, current_buffer_size);
+uint64 sys_dmesg(void) {
+    acquire(&lock);
+    uint64 address;
+    argaddr(0, &address);
+    if (!buffer_overlaps) {
+        if (copyout(myproc()->pagetable, address, buffer, sizeof(char) * current_buffer_position) < 0) {
+            release(&lock);
+            return -1;
+        }
+        release(&lock);
+        return current_buffer_position;
+    } else {
+        if (copyout(myproc()->pagetable, address, buffer + current_buffer_position, sizeof(char) * (BUFF_SIZE - current_buffer_position)) < 0) {
+            release(&lock);
+            return -1;
+        }
+        if (copyout(myproc()->pagetable, address + sizeof(char) * (BUFF_SIZE - current_buffer_position), buffer, sizeof(char) * current_buffer_position) < 0) {
+            release(&lock);
+            return -1;
+        }
+        release(&lock);
+        return BUFF_SIZE;
+    }
 }

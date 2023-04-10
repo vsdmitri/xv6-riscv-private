@@ -189,7 +189,7 @@ void            virtio_disk_intr(void);
 
 // dmesg.c
 void            dmesginit(void);
-void            pr_msg(const char *);
+void            pr_msg(const char *, ...);
 void            dmesg(void);
 
 // sleeplock_handler.c
