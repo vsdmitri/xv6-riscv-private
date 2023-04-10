@@ -30,6 +30,7 @@ main()
     virtio_disk_init();       // emulated hard disk
     userinit();               // first user process
     sleeplock_handler_init(); // sleeplock handler
+    dmesginit();              // debug messages
     __sync_synchronize();
     started = 1;
   } else {
@@ -42,5 +43,5 @@ main()
     plicinithart();   // ask PLIC for device interrupts
   }
 
-  scheduler();        
+  scheduler();
 }

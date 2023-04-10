@@ -22,6 +22,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int dmesg(void);
 int handle_sleeplock(int, int);
 int vmprint();
 int pgaccess();

@@ -29,6 +29,7 @@ OBJS = \
   $K/kernelvec.o \
   $K/plic.o \
   $K/virtio_disk.o \
+  $K/dmesg.o \
   $K/sleeplock_handler.o \
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
@@ -135,6 +136,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_hw_1_1\
 	$U/_hw_1_2\
+	$U/_dmesg\
 	$U/_hw_2_1\
 	$U/_hw_3_1\
 	$U/_hw_3_2\
