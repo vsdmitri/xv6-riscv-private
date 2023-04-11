@@ -80,7 +80,7 @@ static void append_int(int n, int base) {
 
     if (n < 0) {
         append_char('-');
-        n = -(unsigned int) n;
+        n = -(long long) n;
     }
 
     while (n > 0) {
