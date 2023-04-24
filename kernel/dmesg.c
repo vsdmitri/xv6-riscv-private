@@ -70,8 +70,9 @@ static void append_int_with_alignment(int n) {
 #define MAX_BUFFER_SIZE 17
 
 static void append_int(int n, int base) {
-    char buffer[MAX_BUFFER_SIZE];
-    char *bufer_head = buffer + MAX_BUFFER_SIZE - 1;
+    char buffer[MAX_BUFFER_SIZE + 1];
+    char *buffer_head = buffer + MAX_BUFFER_SIZE - 1;
+    buffer_head[MAX_BUFFER_SIZE] = 0;
 
     if (n == 0) {
         append_char('0');
@@ -84,11 +85,11 @@ static void append_int(int n, int base) {
     }
 
     while (n > 0) {
-        *(--bufer_head) = digit_symbols[n % base];
+        *(--buffer_head) = digit_symbols[n % base];
         n /= base;
     }
 
-    append_str(bufer_head);
+    append_str(buffer_head);
 }
 
 static void append_ptr(uint64 x) {
