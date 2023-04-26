@@ -40,3 +40,4 @@ entry("dmesg");
 entry("handle_sleeplock");
 entry("vmprint");
 entry("pgaccess");
+entry("set_log_settings");

@@ -9,6 +9,8 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+enum settings;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -191,6 +193,7 @@ void            virtio_disk_intr(void);
 void            dmesginit(void);
 void            pr_msg(const char *, ...);
 void            dmesg(void);
+char            check_log_setting(enum settings);
 
 // sleeplock_handler.c
 void            sleeplock_handler_init(void);
