@@ -71,8 +71,8 @@ static void append_int_with_alignment(int n) {
 
 static void append_int(int n, int base) {
     char buffer[MAX_BUFFER_SIZE + 1];
-    char *buffer_head = buffer + MAX_BUFFER_SIZE - 1;
-    buffer_head[MAX_BUFFER_SIZE] = 0;
+    buffer[MAX_BUFFER_SIZE] = 0;
+    char *buffer_head = buffer + MAX_BUFFER_SIZE;
 
     if (n == 0) {
         append_char('0');
@@ -171,11 +171,13 @@ uint64 sys_dmesg(void) {
         release(&lock);
         return current_buffer_position;
     } else {
-        if (copyout(myproc()->pagetable, address, buffer + current_buffer_position, sizeof(char) * (BUFF_SIZE - current_buffer_position)) < 0) {
+        if (copyout(myproc()->pagetable, address, buffer + current_buffer_position,
+                    sizeof(char) * (BUFF_SIZE - current_buffer_position)) < 0) {
             release(&lock);
             return -1;
         }
-        if (copyout(myproc()->pagetable, address + sizeof(char) * (BUFF_SIZE - current_buffer_position), buffer, sizeof(char) * current_buffer_position) < 0) {
+        if (copyout(myproc()->pagetable, address + sizeof(char) * (BUFF_SIZE - current_buffer_position), buffer,
+                    sizeof(char) * current_buffer_position) < 0) {
             release(&lock);
             return -1;
         }
