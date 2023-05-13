@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "dmesg.h"
 
 #include <stdarg.h>
 
@@ -16,14 +17,19 @@
 
 static char buffer[BUFF_SIZE];
 static int current_buffer_position = 0;
-int buffer_overlaps = 0;
+static int buffer_overlaps = 0;
 
 static struct spinlock lock;
+static struct spinlock settings_lock;
 
-extern int consolewrite(int, uint64, int);
+static char log_settings[COUNT];
 
 void dmesginit() {
     initlock(&lock, "dmesg lock");
+
+    log_settings[INTERRUPT] = 1;
+    log_settings[SWITCH] = 1;
+    log_settings[SYSCALL] = 1;
 }
 
 void increase_buffer_pos() {
@@ -99,11 +105,16 @@ static void append_ptr(uint64 x) {
 }
 
 static void append_ticks_info() {
-    acquire(&tickslock);
     int ticks_ = ticks;
-    release(&tickslock);
     append_int_with_alignment(ticks_);
     append_str(" :: ");
+}
+
+char check_log_setting(enum settings setting) {
+    acquire(&settings_lock);
+    char result = log_settings[setting];
+    release(&settings_lock);
+    return result;
 }
 
 void pr_msg(const char *fmt, ...) {
@@ -154,12 +165,11 @@ void pr_msg(const char *fmt, ...) {
         }
     }
     va_end(ap);
-
     append_char('\n');
     release(&lock);
 }
 
-uint64 sys_dmesg(void) {
+uint64 sys_dmesg() {
     acquire(&lock);
     uint64 address;
     argaddr(0, &address);
@@ -184,4 +194,16 @@ uint64 sys_dmesg(void) {
         release(&lock);
         return BUFF_SIZE;
     }
+}
+
+uint64 sys_set_log_settings() {
+    int setting;
+    argint(0, &setting);
+    if (setting >= COUNT || setting < 0)
+        return -1;
+    acquire(&settings_lock);
+    log_settings[setting] ^= 1;
+    release(&settings_lock);
+
+    return 0;
 }

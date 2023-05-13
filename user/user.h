@@ -26,6 +26,7 @@ int dmesg(char *);
 int handle_sleeplock(int, int);
 int vmprint();
 int pgaccess();
+int set_log_settings(int);
 
 // ulib.c
 int stat(const char*, struct stat*);
