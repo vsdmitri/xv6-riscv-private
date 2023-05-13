@@ -107,6 +107,8 @@ extern uint64 sys_handle_sleeplock(void);
 extern uint64 sys_vmprint(void);
 extern uint64 sys_pgaccess(void);
 extern uint64 sys_set_log_settings(void);
+extern uint64 sys_symlink(void);
+extern uint64 sys_readlink(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -137,6 +139,8 @@ static uint64 (*syscalls[])(void) = {
 [SYS_vmprint]          sys_vmprint,
 [SYS_pgaccess]         sys_pgaccess,
 [SYS_set_log_settings] sys_set_log_settings,
+[SYS_symlink]          sys_symlink,
+[SYS_readlink]         sys_readlink,
 };
 
 void
