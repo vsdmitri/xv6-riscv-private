@@ -27,6 +27,8 @@ int handle_sleeplock(int, int);
 int vmprint();
 int pgaccess();
 int set_log_settings(int);
+int symlink(const char*, const char*);
+int readlink(const char*, char*);
 
 // ulib.c
 int stat(const char*, struct stat*);
