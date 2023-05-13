@@ -92,12 +92,6 @@ sys_uptime(void)
 }
 
 uint64
-sys_dmesg(void) {
-    dmesg();
-    return 0;
-}
-
-uint64
 sys_handle_sleeplock(void)
 {
   int request_type;
