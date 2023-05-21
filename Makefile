@@ -141,6 +141,7 @@ UPROGS=\
 	$U/_hw_3_1\
 	$U/_hw_3_2\
 	$U/_set_log_settings\
+	$U/_truncate
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
